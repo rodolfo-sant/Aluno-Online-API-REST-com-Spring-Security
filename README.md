@@ -161,7 +161,50 @@ DBeaver (Visualização do banco de dados)
    | `JWT_SECRET` | não | `12345678` (só para desenvolvimento) |
 
 3. Rode a aplicação (`AlunoOnlineApplication`). Ela sobe em `http://localhost:8080`.
-4. Crie um usuário em `POST /cadastros`, faça login em `POST /login` e use o token devolvido como **Bearer Token** nas demais rotas.
+4. Crie um usuário em `POST /cadastros`, faça login em `POST /login` e use o token devolvido como **Bearer Token** nas demais rotas (veja o passo a passo abaixo).
+
+## 🔑 Primeiro Acesso
+
+⚠️ **Ao rodar o projeto em um banco novo, não existe nenhum usuário cadastrado.** O cadastro de usuários é **público** (não precisa de token nem de outra conta), então qualquer pessoa consegue criar o próprio acesso:
+
+**1. Cadastre um usuário (sem token):**
+
+```http
+POST http://localhost:8080/cadastros
+Content-Type: application/json
+
+{
+  "login": "professor@alunoonline.com",
+  "senha": "123456"
+}
+```
+
+Resposta esperada: **201 Created** com `{ "id": 1, "login": "professor@alunoonline.com" }`. A senha é salva no banco com hash BCrypt.
+
+**2. Faça login com o mesmo usuário (sem token):**
+
+```http
+POST http://localhost:8080/login
+Content-Type: application/json
+
+{
+  "login": "professor@alunoonline.com",
+  "senha": "123456"
+}
+```
+
+Resposta esperada: **200 OK** com `{ "token": "eyJ..." }`.
+
+**3. Use o token nas demais rotas:**
+
+No Insomnia, abra a aba **Auth**, escolha **Bearer Token** e cole o valor do `token` (sem as aspas). Isso equivale a enviar o cabeçalho:
+
+```http
+GET http://localhost:8080/alunos
+Authorization: Bearer eyJ...
+```
+
+O token vale por **2 horas**. Depois disso, faça login novamente para gerar outro.
 
 ## 📸 Testes e Demonstração
 
