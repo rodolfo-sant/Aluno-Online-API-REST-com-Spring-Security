@@ -26,10 +26,10 @@ public class SecurityConfigurations {
         return http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(req -> {
-                    // Permite o acesso ao endpoint /login sem autenticação
-                    req.requestMatchers("/login").permitAll();
-                    // Permite o acesso ao endpoint /cadastros sem autenticação
-                    req.requestMatchers("/cadastros").permitAll();
+                    // Permite o acesso aos endpoints /login e /cadastros sem autenticação
+                    req.requestMatchers("/login", "/cadastros").permitAll();
+                    // Permite o acesso à documentação (Swagger) sem autenticação
+                    req.requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll();
                     req.anyRequest().authenticated();
                 })
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)

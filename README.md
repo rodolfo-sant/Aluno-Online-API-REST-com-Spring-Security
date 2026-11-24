@@ -12,10 +12,11 @@ Até a versão anterior, a API **Aluno Online** era pública: qualquer pessoa qu
 - **Autorização:** todas as rotas da API exigem esse token no cabeçalho `Authorization: Bearer <token>`. Sem token, ou com um token inválido ou expirado, a requisição é bloqueada.
 - **Senhas seguras:** as senhas ficam salvas no banco com **hash BCrypt**, nunca em texto puro.
 - **Cadastro de usuários:** uma rota pública para criar novos usuários, com validação dos campos e tratamento de erros.
+- **Documentação com Swagger:** a API é documentada automaticamente pelo SpringDoc. Na página do Swagger é possível cadastrar, fazer login, informar o token no botão **Authorize** e testar as rotas protegidas, que aparecem com um **cadeado**.
 
 A API é **STATELESS**: o servidor não guarda sessão. Cada requisição traz o token, e o próprio token diz quem é o usuário.
 
-Todo o domínio original (alunos, professores, disciplinas, matrículas, cálculo de média e trancamento) **foi mantido sem alterações**. A segurança foi adicionada em classes novas.
+Todo o domínio original (alunos, professores, disciplinas, matrículas, cálculo de média e trancamento) **foi mantido sem alterações de regra**. A segurança foi adicionada em classes novas. Nos controllers existentes, a única mudança foi a anotação `@SecurityRequirement`, que só afeta a documentação do Swagger.
 
 ---
 
@@ -83,6 +84,7 @@ src/main/java/br/com/alunoonline/api/
  │    └── ⭐ DadosDetalhamentoUsuario    # resposta do cadastro (id e login, sem a senha)
  ├── infra/
  │    ├── ⭐ exception/TratadorDeErros   # @RestControllerAdvice: erros de validação viram 400
+ │    ├── ⭐ springdoc/SpringDocConfigurations  # Swagger: esquema "bearer-key" (botão Authorize)
  │    └── ⭐ security/
  │         ├── SecurityConfigurations  # CSRF off, STATELESS, regras de acesso, BCrypt, AuthenticationManager
  │         ├── SecurityFilter          # filtro que valida o token em toda requisição
@@ -144,7 +146,7 @@ Lombok (Redução de boilerplate de código)
 
 Maven (Gerenciamento de dependências)
 
-Insomnia (Teste de rotas da API)
+SpringDoc OpenAPI 3.0.3 / Swagger UI (Documentação e teste das rotas pelo navegador)
 
 DBeaver (Visualização do banco de dados)
 
@@ -160,7 +162,7 @@ DBeaver (Visualização do banco de dados)
    | `DB_URL` | não | `jdbc:postgresql://localhost:5432/aluno_online` |
    | `JWT_SECRET` | não | `12345678` (só para desenvolvimento) |
 
-3. Rode a aplicação (`AlunoOnlineApplication`). Ela sobe em `http://localhost:8080`.
+3. Rode a aplicação (`AlunoOnlineApplication`). Ela sobe em `http://localhost:8080`, e a documentação fica em **`http://localhost:8080/swagger-ui/index.html`** (aberta, sem login).
 4. Crie um usuário em `POST /cadastros`, faça login em `POST /login` e use o token devolvido como **Bearer Token** nas demais rotas (veja o passo a passo abaixo).
 
 ## 🔑 Primeiro Acesso
@@ -197,7 +199,9 @@ Resposta esperada: **200 OK** com `{ "token": "eyJ..." }`.
 
 **3. Use o token nas demais rotas:**
 
-No Insomnia, abra a aba **Auth**, escolha **Bearer Token** e cole o valor do `token` (sem as aspas). Isso equivale a enviar o cabeçalho:
+No **Swagger**, clique em **Authorize**, cole o valor do `token` (sem as aspas) no campo `bearer-key` e clique em **Authorize**. A partir daí, todas as rotas passam a enviar o token.
+
+Isso equivale a enviar o cabeçalho:
 
 ```http
 GET http://localhost:8080/alunos
@@ -208,36 +212,25 @@ O token vale por **2 horas**. Depois disso, faça login novamente para gerar out
 
 ## 📸 Testes e Demonstração
 
-### 1. Requisições no Insomnia
+### 1. Requisições no Swagger
 
-**Listando Alunos sem Token (GET), bloqueado com 403:**
-<img width="1456" height="782" alt="ListarAlunosSemToken" src="docs/prints/01-listar-alunos-sem-token.jpg" />
+**Página do Swagger, com o botão Authorize e o cadeado nas rotas protegidas:**
+<img width="800" height="600" alt="SwaggerCadeados" src="docs/prints/12-swagger-cadeados.png" />
 
-**Efetuando Login com Senha Errada (POST), bloqueado com 403:**
-<img width="1456" height="782" alt="LoginSenhaErrada" src="docs/prints/02-login-senha-errada.jpg" />
+**Cadastrando um Usuário pelo Swagger, sem token (POST /cadastros):**
+<img width="800" height="692" alt="SwaggerCadastro" src="docs/prints/13-swagger-cadastro.jpg" />
 
-**Efetuando Login (POST), devolvendo o Token JWT:**
-<img width="1456" height="782" alt="LoginToken" src="docs/prints/03-login-token.jpg" />
+**Efetuando Login pelo Swagger (POST /login), devolvendo o Token JWT:**
+<img width="800" height="692" alt="SwaggerLogin" src="docs/prints/14-swagger-login-token.jpg" />
 
-**Criando um Aluno com Token (POST):**
-<img width="1456" height="782" alt="CriarAlunoComToken" src="docs/prints/04-criar-aluno-com-token.jpg" />
+**Listando Alunos sem Autorizar (GET /alunos), bloqueado com 403:**
+<img width="800" height="692" alt="SwaggerListarSemToken" src="docs/prints/15-swagger-listar-sem-token.jpg" />
 
-**Listando Alunos com Token (GET):**
-<img width="1456" height="782" alt="ListarAlunosComToken" src="docs/prints/05-listar-alunos-com-token.jpg" />
+**Informando o Token no Authorize (esquema bearer-key):**
+<img width="800" height="692" alt="SwaggerAuthorize" src="docs/prints/16-swagger-authorize.jpg" />
 
-**Listando Alunos com Token Alterado (GET), bloqueado com 403:**
-<img width="1456" height="782" alt="TokenInvalido" src="docs/prints/06-token-invalido.jpg" />
-
-**Cadastrando Usuário com Campos Vazios (POST), 400 com a lista de erros:**
-<img width="1456" height="782" alt="CadastroCamposVazios" src="docs/prints/07-cadastro-campos-vazios.jpg" />
-
-**Cadastrando um Usuário (POST):**
-<img width="1456" height="782" alt="CadastroUsuario" src="docs/prints/08-cadastro-usuario.jpg" />
-
-**Cadastrando um Usuário com Login Repetido (POST), 400:**
-<img width="1456" height="782" alt="CadastroLoginRepetido" src="docs/prints/09-cadastro-login-repetido.jpg" />
-
-💡 Nota: os testes também confirmaram que a criação e a listagem de professores e disciplinas, a matrícula e o lançamento de notas (com o status "APROVADO") continuam funcionando normalmente quando a requisição envia o token.
+**Listando Alunos depois do Authorize (GET /alunos), com o cabeçalho Authorization: Bearer:**
+<img width="800" height="692" alt="SwaggerListarComToken" src="docs/prints/17-swagger-listar-com-token.jpg" />
 
 ### 2. Persistência no DBeaver (PostgreSQL)
 
